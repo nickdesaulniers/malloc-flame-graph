@@ -1,0 +1,7 @@
+*.swp
+*.log
+*.txt
+*.svg
+*.demangled
+*.so
+a.out
