@@ -25,7 +25,6 @@ static void __attribute__((destructor)) done(void) {
 static void load(void** fn, const char* const fn_name) {
   if (!*fn) {
     dlerror();
-    void* sym = dlsym(RTLD_NEXT, fn_name);
     *fn = dlsym(RTLD_NEXT, fn_name);
     if (!*fn) {
       // print result of dlerror() ?

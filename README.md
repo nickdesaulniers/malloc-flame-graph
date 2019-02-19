@@ -1,4 +1,4 @@
-# Memory Debug
+# Malloc Flame Graph
 
 A fake malloc hook (using runtime function interposition) that logs backtraces
 of allocation sites, and tools to preprocess the log into a flamegraph.
