@@ -19,10 +19,19 @@ void debug_print(const char *msg)
 #define debug_print(x)
 #endif
 
+#define OUTPUT_FILENAME_ENVVAR "MFG_OUTPUT"
+
 static int output_fd = -1;
 static void __attribute__((constructor)) init(void) {
-  output_fd = open("mallocs.log", O_CREAT | O_APPEND | O_WRONLY,
+
   debug_print("initialization\n");
+
+  char* filename;
+  if (!(filename = getenv(OUTPUT_FILENAME_ENVVAR))) {
+    filename = "mallocs.log";
+  }
+
+  output_fd = open(filename, O_CREAT | O_APPEND | O_WRONLY,
       S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (output_fd == -1) exit(43);
 }
