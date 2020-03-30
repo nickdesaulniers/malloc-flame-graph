@@ -9,16 +9,26 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef DEBUG
+void debug_print(const char *msg)
+{
+  write(0, "[MFG]: ", 7);
+  write(0, msg, strlen(msg) + 1);
+}
+#else
+#define debug_print(x)
+#endif
+
 static int output_fd = -1;
 static void __attribute__((constructor)) init(void) {
-  /*printf("we're in\n");*/
   output_fd = open("mallocs.log", O_CREAT | O_APPEND | O_WRONLY,
+  debug_print("initialization\n");
       S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (output_fd == -1) exit(43);
 }
 
 static void __attribute__((destructor)) done(void) {
-  /*write(0, "done\n", 5);*/
+  debug_print("cleanup\n");
   close(output_fd);
 }
 
@@ -27,7 +37,7 @@ static void load(void** fn, const char* const fn_name) {
     dlerror();
     *fn = dlsym(RTLD_NEXT, fn_name);
     if (!*fn) {
-      // print result of dlerror() ?
+      debug_print("dl error\n");
       exit(42);
     }
   }
@@ -68,7 +78,7 @@ void* malloc(size_t size) {
       mem_pos += size;
       return ret;
     } else {
-      /*fprintf(stderr, "Need more temp mem for allocations\n");*/
+      debug_print("Need more temp mem for allocations\n");
       exit(45);
     }
   }
@@ -99,8 +109,7 @@ void free(void* ptr) {
   if (no_hook) return real_free(ptr);
 
   no_hook = 1;
-  /*puts("free");*/
-  /*show_backtrace();*/
+  debug_print("free called\n");
   no_hook = 0;
 
   real_free(ptr);
