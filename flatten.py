@@ -1,6 +1,6 @@
 import re
 
-with open("mallocs.demangled", "rU") as input_f:
+with open("mallocs.demangled", "r") as input_f:
     count = 0
     stack = []
     regex = re.compile("^malloc of ([0-9]+) bytes")
