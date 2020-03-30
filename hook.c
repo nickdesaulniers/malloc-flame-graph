@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -61,24 +62,23 @@ static void show_backtrace(void) {
 }
 
 static char mem[1024*1024];
-static unsigned long mem_pos = 0;
+static size_t mem_pos = 0;
+
 void* malloc(size_t size) {
   static void* (*real_malloc)(size_t) = NULL;
-  static __thread int no_hook = 0;
-  static int initializing = 0;
+  static __thread bool no_hook = false;
+  static bool initializing = false;
 
-  /*fprintf(stderr, "malloc %zu\n", size);*/
-  /*load((void**)&real_malloc, "malloc");*/
   if (!real_malloc) {
     if (!initializing) {
-      initializing = 1;
+      initializing = true;
       dlerror();
       void* sym = dlsym(RTLD_NEXT, "malloc");
       if (!sym) {
         exit(42);
       }
       real_malloc = sym;
-      initializing = 0;
+      initializing = false;
     } else if (mem_pos + size < sizeof(mem)){
       // if the function is not defined, we have to be careful calling dlsym,
       // as it may allocate, causing infinite recursion.
@@ -94,19 +94,19 @@ void* malloc(size_t size) {
 
   if (no_hook) return real_malloc(size);
 
-  no_hook = 1;
+  no_hook = true;
   char message[32];
   int len = snprintf(message, sizeof(message), "malloc of %zu bytes\n", size);
   write(output_fd, message, len);
   show_backtrace();
-  no_hook = 0;
+  no_hook = false;
 
   return real_malloc(size);
 }
 
 void free(void* ptr) {
   static void (*real_free)(void*) = NULL;
-  static __thread int no_hook = 0;
+  static __thread bool no_hook = false;
 
   if (ptr >= (void*) mem && ptr <= (void*)(mem + mem_pos)) {
     // statically allocated memory, don't pass to real_free.
@@ -117,9 +117,9 @@ void free(void* ptr) {
 
   if (no_hook) return real_free(ptr);
 
-  no_hook = 1;
+  no_hook = true;
   debug_print("free called\n");
-  no_hook = 0;
+  no_hook = false;
 
   real_free(ptr);
 }
