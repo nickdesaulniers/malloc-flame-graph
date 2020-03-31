@@ -1,7 +1,10 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <errno.h>
 #include <execinfo.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +24,24 @@ void debug_print(const char *msg)
 #endif
 
 #define MFG_ENV_OUTPUT "MFG_OUTPUT"
+#define MFG_ENV_MIN_SIZE "MFG_MALLOC_MIN"
+#define MFG_ENV_MAX_SIZE "MFG_MALLOC_MAX"
+
+static size_t filter_min_size;
+static size_t filter_max_size = SIZE_MAX;
+
+static void safe_str_to_sizet(const char *s, size_t *value)
+{
+  if (!s)
+    return;
+
+  errno = 0;
+  char *end_ptr;
+  unsigned long int r = strtoul(s, &end_ptr, 10);
+  if (errno == 0 && !(end_ptr == s && r == 0)) {
+    *value = r;
+  }
+}
 
 static int output_fd = -1;
 static void __attribute__((constructor)) init(void) {
@@ -35,6 +56,10 @@ static void __attribute__((constructor)) init(void) {
   output_fd = open(filename, O_CREAT | O_APPEND | O_WRONLY,
       S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (output_fd == -1) exit(43);
+
+
+  safe_str_to_sizet(getenv(MFG_ENV_MIN_SIZE), &filter_min_size);
+  safe_str_to_sizet(getenv(MFG_ENV_MAX_SIZE), &filter_max_size);
 }
 
 static void __attribute__((destructor)) done(void) {
@@ -94,12 +119,14 @@ void* malloc(size_t size) {
 
   if (no_hook) return real_malloc(size);
 
-  no_hook = true;
-  char message[32];
-  int len = snprintf(message, sizeof(message), "malloc of %zu bytes\n", size);
-  write(output_fd, message, len);
-  show_backtrace();
-  no_hook = false;
+  if (size >= filter_min_size && size <= filter_max_size) {
+    no_hook = true;
+    char message[32];
+    int len = snprintf(message, sizeof(message), "malloc of %zu bytes\n", size);
+    write(output_fd, message, len);
+    show_backtrace();
+    no_hook = false;
+  }
 
   return real_malloc(size);
 }
