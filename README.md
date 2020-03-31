@@ -11,12 +11,15 @@ info and unstripped binary names).
 
 ## Usage
 
-```
+```sh
 $ rm -f mallocs.log
 $ LD_PRELOAD=./hook.so clang -fuse-ld=lld hello_world.c
 $ c++filt < mallocs.txt > mallocs.demangled
 $ python flatten.py > mallocs.txt
 $ path/to/FlameGraph/flamegraph.pl mallocs.txt > mallocs.svg
+
+$ # use alternative output file, e.g. malloc.log
+$ MFG_OUTPUT=malloc.log LD_PRELOAD=./hook.so ...
 ```
 
 hook.so appends to a file named mallocs.txt. flatten.py reads a file named
