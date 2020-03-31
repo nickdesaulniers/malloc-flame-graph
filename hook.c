@@ -20,7 +20,7 @@ void debug_print(const char *msg)
 #define debug_print(x)
 #endif
 
-#define OUTPUT_FILENAME_ENVVAR "MFG_OUTPUT"
+#define MFG_ENV_OUTPUT "MFG_OUTPUT"
 
 static int output_fd = -1;
 static void __attribute__((constructor)) init(void) {
@@ -28,7 +28,7 @@ static void __attribute__((constructor)) init(void) {
   debug_print("initialization\n");
 
   char* filename;
-  if (!(filename = getenv(OUTPUT_FILENAME_ENVVAR))) {
+  if (!(filename = getenv(MFG_ENV_OUTPUT))) {
     filename = "mallocs.log";
   }
 
